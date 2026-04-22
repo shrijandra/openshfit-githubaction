@@ -7,16 +7,26 @@ on:
 
 env:
   IMAGE_NAME: shrijandra/demo-app
-
+  
+defaults:
+    run:
+      shell: powershell
+      
 jobs:
   build-and-deploy:
     runs-on: self-hosted #ubuntu-latest
+  
 
     steps:
+      - name: Clean workspace (fix EBUSY issue)
+        run: |
+          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+      
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          clean: false  # This prevents the runner from trying to delete the busy folder
+          clean: true
+          fetch-depth: 1
 
       - name: Login to Container Registry
         run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
