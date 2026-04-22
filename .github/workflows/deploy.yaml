@@ -13,7 +13,7 @@ env:
        
 jobs:
   build-and-deploy:
-    runs-on: self-hosted #ubuntu-latest
+    runs-on: self-hosted #ubuntu-latest testing
   
     steps:
       - name: Clean workspace (fix EBUSY issue)
