@@ -5,24 +5,22 @@ on:
     branches:
       - main
 
-env:
-  IMAGE_NAME: shrijandra/demo-app
-  
 defaults:
     run:
       shell: powershell
-      
+env:
+  IMAGE_NAME: shrijandra/demo-app
+       
 jobs:
   build-and-deploy:
     runs-on: self-hosted #ubuntu-latest
   
-
     steps:
       - name: Clean workspace (fix EBUSY issue)
         run: |
           Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
       
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           clean: true
