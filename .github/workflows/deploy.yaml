@@ -10,15 +10,16 @@ defaults:
       shell: powershell
 env:
   IMAGE_NAME: shrijandra/demo-app
+  RUNNER_TEMP: C:\runner-temp
        
 jobs:
   build-and-deploy:
     runs-on: self-hosted #ubuntu-latest testing
   
     steps:
-      - name: Clean workspace (fix EBUSY issue)
+      - name: Clean workspace (safe cleanup)
         run: |
-          Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "$env:GITHUB_WORKSPACE\*" -ErrorAction SilentlyContinue
       - name: Wait for file handles to release
         run: Start-Sleep -Seconds 5
       - name: Clean temp folder
@@ -31,6 +32,7 @@ jobs:
         with:
           clean: false
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Login to Container Registry
         run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
