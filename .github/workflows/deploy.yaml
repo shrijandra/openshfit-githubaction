@@ -6,28 +6,23 @@ on:
 
 defaults:
   run:
-    shell: powershell  # Fixed from pwsh
+    shell: pwsh # Use PowerShell Core for better stability
 
 env:
   IMAGE_NAME: shrijandra/demo-app
+  ACTIONS_RUNNER_DO_NOT_CHOWN: true
 
 jobs:
   build-and-deploy:
     runs-on: self-hosted
     steps:
-      - name: Manual Workspace Cleanup
-        run: |
-          if (Test-Path "$env:GITHUB_WORKSPACE") {
-            Get-ChildItem -Path "$env:GITHUB_WORKSPACE" -Exclude "_*" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-          }
-
-      - name: Manual Git Checkout
-        run: |
-          git config --global core.longpaths true
-          # Note: No extra slashes, and correctly formatted variable
-          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@://github.com{{ github.repository }}.git" .
-          git checkout ${{ github.sha }}
-
+      # Use a lighter checkout that doesn't try to manage the workspace as aggressively
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          persist-credentials: false
+          fetch-depth: 1 
 
       - name: Login to Container Registry
         run: |
@@ -41,6 +36,7 @@ jobs:
 
       - name: Login to OpenShift
         run: |
+          # Use backtick ` for Windows line breaks, not \
           oc login ${{ secrets.OPENSHIFT_SERVER }} `
             --token=${{ secrets.OPENSHIFT_TOKEN }} `
             --insecure-skip-tls-verify=true
@@ -48,9 +44,10 @@ jobs:
       - name: Deploy App
         run: |
           $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
-          # Native PowerShell replacement
+          # PowerShell way to replace text in a file
           (Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', $FULL_TAG) | Set-Content deployment.yaml
           oc apply -f deployment.yaml
           oc apply -f service.yaml
           oc apply -f route.yaml
+
 
