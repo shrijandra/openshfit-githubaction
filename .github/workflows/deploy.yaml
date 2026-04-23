@@ -10,7 +10,9 @@ defaults:
       shell: powershell
 env:
   IMAGE_NAME: shrijandra/demo-app
-  RUNNER_TEMP: C:\runner-temp
+  #RUNNER_TEMP: C:\runner-temp
+  ACTIONS_RUNNER_DO_NOT_CHOWN: true
+  GITHUB_ACTIONS_RUNNER_FORCE_CHOWN: false
        
 jobs:
   build-and-deploy:
@@ -31,7 +33,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           clean: false
-          fetch-depth: 1
           persist-credentials: false
 
       - name: Login to Container Registry
