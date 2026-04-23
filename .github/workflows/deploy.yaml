@@ -6,28 +6,26 @@ on:
 
 defaults:
   run:
-    shell: pwsh # Use PowerShell Core for better stability
+    shell: powershell  # Fixed from pwsh
 
 env:
   IMAGE_NAME: shrijandra/demo-app
-  ACTIONS_RUNNER_DO_NOT_CHOWN: true
 
 jobs:
   build-and-deploy:
     runs-on: self-hosted
     steps:
-      # 1. Manually clean the directory without crashing on errors
       - name: Manual Workspace Cleanup
         run: |
           if (Test-Path "$env:GITHUB_WORKSPACE") {
             Get-ChildItem -Path "$env:GITHUB_WORKSPACE" -Exclude "_*" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
           }
 
-      # 2. Manual Git Clone (Bypasses actions/checkout entirely)
       - name: Manual Git Checkout
         run: |
           git config --global core.longpaths true
-          git clone --depth 1 https://github.com{{ github.repository }}.git .
+          # Use this for private or public repos
+          git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@://github.com{{ github.repository }}.git" .
           git checkout ${{ github.sha }}
 
       - name: Login to Container Registry
@@ -49,7 +47,9 @@ jobs:
       - name: Deploy App
         run: |
           $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
+          # Native PowerShell replacement
           (Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', $FULL_TAG) | Set-Content deployment.yaml
           oc apply -f deployment.yaml
           oc apply -f service.yaml
           oc apply -f route.yaml
+
