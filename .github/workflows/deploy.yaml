@@ -19,7 +19,13 @@ jobs:
       - name: Clean workspace (fix EBUSY issue)
         run: |
           Get-ChildItem -Path $env:GITHUB_WORKSPACE -Force -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-      
+      - name: Wait for file handles to release
+        run: Start-Sleep -Seconds 5
+      - name: Clean temp folder
+        run: |
+          Remove-Item -Recurse -Force "$env:RUNNER_TEMP\*" -ErrorAction SilentlyContinue
+      - name: Wait for file handles to release
+        run: Start-Sleep -Seconds 5
       - name: Checkout code
         uses: actions/checkout@v4
         with:
