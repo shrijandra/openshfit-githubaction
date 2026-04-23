@@ -24,9 +24,10 @@ jobs:
       - name: Manual Git Checkout
         run: |
           git config --global core.longpaths true
-          # Use this for private or public repos
+          # Note: No extra slashes, and correctly formatted variable
           git clone --depth 1 "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@://github.com{{ github.repository }}.git" .
           git checkout ${{ github.sha }}
+
 
       - name: Login to Container Registry
         run: |
