@@ -63,6 +63,7 @@ jobs:
         run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true
 
       - name: Deploy App
+        shell: cmd
         run: |
           :: Set the variable
           SET "FULL_TAG=***/***/demo-app:latest"
