@@ -42,14 +42,17 @@ jobs:
       - name: Setup OpenShift Environment
         shell: cmd
         run: |
-          FOR /f "tokens=*" %%i IN ('crc oc-env') DO (
-            SET "line=%%i"
+          FOR /F "tokens=*" %%G IN ('crc oc-env') DO (
+            SET "line=%%G"
             SETLOCAL ENABLEDELAYEDEXPANSION
-            FOR /f "tokens=2,3 delims= = " %%a IN ("!line!") DO (
-              IF /I "%%a"=="PATH" (
-                echo %%~b>> %GITHUB_PATH%
+            :: Remove 'SET ' from the start of the line
+            SET "trimmed=!line:~4!"
+            :: Split at the = to get name and value
+            FOR /F "tokens=1* delims==" %%A IN ("!trimmed!") DO (
+              IF /I "%%A"=="PATH" (
+                echo %%B>> %GITHUB_PATH%
               ) ELSE (
-                echo %%a=%%~b>> %GITHUB_ENV%
+                echo %%A=%%B>> %GITHUB_ENV%
               )
             )
             ENDLOCAL
