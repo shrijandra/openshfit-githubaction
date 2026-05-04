@@ -17,6 +17,10 @@ jobs:
     runs-on: self-hosted
     steps:
       # Use a lighter checkout that doesn't try to manage the workspace as aggressively
+      - name: Fix git safe directory
+        run: git config --global --add safe.directory $env:GITHUB_WORKSPACE
+        shell: pwsh
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
