@@ -13,11 +13,7 @@ jobs:
     steps:
       - name: Fix git safe directory
         shell: cmd
-        run: git config --global --add safe.directory *
-
-      - name: Kill lingering sh processes
-        shell: cmd
-        run: taskkill /F /IM sh.exe /T 2>nul || echo "No sh.exe running"
+        run: git config --system --add safe.directory *
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,7 +21,7 @@ jobs:
           clean: false
           persist-credentials: false
           fetch-depth: 1
-          submodules: false      # ← add this — disables the sh -c submodule commands
+          submodules: false
 
       - name: Login to Container Registry
         shell: cmd
