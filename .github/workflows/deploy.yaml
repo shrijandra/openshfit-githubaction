@@ -11,10 +11,6 @@ jobs:
   build-and-deploy:
     runs-on: self-hosted
     steps:
-      - name: Fix git safe directory
-        shell: cmd
-        run: git config --system --add safe.directory *
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
