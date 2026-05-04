@@ -15,6 +15,10 @@ jobs:
         shell: cmd
         run: git config --global --add safe.directory *
 
+      - name: Kill lingering sh processes
+        shell: cmd
+        run: taskkill /F /IM sh.exe /T 2>nul || echo "No sh.exe running"
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
