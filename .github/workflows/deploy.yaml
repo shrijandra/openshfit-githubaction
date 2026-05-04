@@ -21,6 +21,7 @@ jobs:
           clean: false
           persist-credentials: false
           fetch-depth: 1
+          submodules: false      # ← add this — disables the sh -c submodule commands
 
       - name: Login to Container Registry
         shell: cmd
