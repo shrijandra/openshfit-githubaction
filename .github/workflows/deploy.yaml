@@ -1,53 +1,45 @@
 name: Deploy to OpenShift
+
 on:
   push:
     branches:
       - main
 
-defaults:
-  run:
-    shell: pwsh # Use PowerShell Core for better stability
-
 env:
   IMAGE_NAME: shrijandra/demo-app
-  ACTIONS_RUNNER_DO_NOT_CHOWN: true
 
 jobs:
   build-and-deploy:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+
     steps:
-      # Use a lighter checkout that doesn't try to manage the workspace as aggressively
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          clean: false
-          persist-credentials: false
-          fetch-depth: 1 
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Login to Container Registry
-        run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
 
-      - name: Build and Push Image
+      - name: Build Image
+        run: docker build -t ${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest .
+
+      - name: Push Image
+        run: docker push ${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Install oc CLI
         run: |
-          $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
-          docker build -t $FULL_TAG .
-          docker push $FULL_TAG
+          curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
 
       - name: Login to OpenShift
         run: |
-          # Use backtick ` for Windows line breaks, not \
-          oc login ${{ secrets.OPENSHIFT_SERVER }} `
-            --token=${{ secrets.OPENSHIFT_TOKEN }} `
-            --insecure-skip-tls-verify=true
+          oc login ${{ secrets.OPENSHIFT_SERVER }} \
+          --token=${{ secrets.OPENSHIFT_TOKEN }} \
+          --insecure-skip-tls-verify=true
 
       - name: Deploy App
         run: |
-          $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
-          # PowerShell way to replace text in a file
-          (Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', $FULL_TAG) | Set-Content deployment.yaml
+          sed -i "s|IMAGE_PLACEHOLDER|${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest|g" deployment.yaml
           oc apply -f deployment.yaml
           oc apply -f service.yaml
           oc apply -f route.yaml
-
-
