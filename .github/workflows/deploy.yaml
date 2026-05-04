@@ -4,10 +4,6 @@ on:
     branches:
       - main
 
-defaults:
-  run:
-    shell: bash   # ← change from pwsh to bash
-
 env:
   IMAGE_NAME: shrijandra/demo-app
 
@@ -16,7 +12,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Fix git safe directory
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        shell: cmd
+        run: git config --global --add safe.directory *
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,26 +23,24 @@ jobs:
           fetch-depth: 1
 
       - name: Login to Container Registry
-        run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} \
-            -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+        shell: cmd
+        run: echo ${{ secrets.REGISTRY_PASSWORD }}| docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
 
       - name: Build and Push Image
+        shell: cmd
         run: |
-          FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
-          docker build -t $FULL_TAG .
-          docker push $FULL_TAG
+          docker build -t ${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest .
+          docker push ${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Login to OpenShift
-        run: |
-          oc login ${{ secrets.OPENSHIFT_SERVER }} \
-            --token=${{ secrets.OPENSHIFT_TOKEN }} \
-            --insecure-skip-tls-verify=true
+        shell: cmd
+        run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true
 
       - name: Deploy App
+        shell: pwsh
         run: |
-          FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
-          sed -i "s|IMAGE_PLACEHOLDER|$FULL_TAG|g" deployment.yaml
+          $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
+          (Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', $FULL_TAG) | Set-Content deployment.yaml
           oc apply -f deployment.yaml
           oc apply -f service.yaml
           oc apply -f route.yaml
