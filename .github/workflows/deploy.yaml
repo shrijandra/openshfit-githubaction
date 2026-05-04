@@ -18,6 +18,16 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
           submodules: false
+        continue-on-error: true
+
+      - name: Verify checkout succeeded
+        shell: cmd
+        run: |
+          if not exist "%GITHUB_WORKSPACE%\deployment.yaml" (
+            echo ERROR: Checkout failed - deployment.yaml missing
+            exit /b 1
+          )
+          echo Checkout verified OK
 
       - name: Login to Container Registry
         shell: cmd
