@@ -6,51 +6,46 @@ on:
 
 defaults:
   run:
-    shell: pwsh # Use PowerShell Core for better stability
+    shell: bash   # ← change from pwsh to bash
 
 env:
   IMAGE_NAME: shrijandra/demo-app
-  ACTIONS_RUNNER_DO_NOT_CHOWN: true
 
 jobs:
   build-and-deploy:
     runs-on: self-hosted
     steps:
-      # Use a lighter checkout that doesn't try to manage the workspace as aggressively
       - name: Fix git safe directory
-        run: git config --global --add safe.directory $env:GITHUB_WORKSPACE
-        shell: pwsh
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           clean: false
           persist-credentials: false
-          fetch-depth: 1 
+          fetch-depth: 1
 
       - name: Login to Container Registry
         run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY_URL }} \
+            -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
 
       - name: Build and Push Image
         run: |
-          $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
+          FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
           docker build -t $FULL_TAG .
           docker push $FULL_TAG
 
       - name: Login to OpenShift
         run: |
-          # Use backtick ` for Windows line breaks, not \
-          oc login ${{ secrets.OPENSHIFT_SERVER }} `
-            --token=${{ secrets.OPENSHIFT_TOKEN }} `
+          oc login ${{ secrets.OPENSHIFT_SERVER }} \
+            --token=${{ secrets.OPENSHIFT_TOKEN }} \
             --insecure-skip-tls-verify=true
 
       - name: Deploy App
         run: |
-          $FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
-          # PowerShell way to replace text in a file
-          (Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', $FULL_TAG) | Set-Content deployment.yaml
+          FULL_TAG="${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
+          sed -i "s|IMAGE_PLACEHOLDER|$FULL_TAG|g" deployment.yaml
           oc apply -f deployment.yaml
           oc apply -f service.yaml
           oc apply -f route.yaml
-
