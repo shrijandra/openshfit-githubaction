@@ -41,6 +41,7 @@ jobs:
 
       - name: Login to OpenShift
         shell: cmd
+        run: @FOR /f "tokens=*" %i IN ('crc oc-env') DO @call %i
         run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true
 
       - name: Deploy App
