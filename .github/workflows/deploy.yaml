@@ -61,18 +61,18 @@ jobs:
       - name: Login to OpenShift
         shell: cmd
         run: oc login ${{ secrets.OPENSHIFT_SERVER }} --token=${{ secrets.OPENSHIFT_TOKEN }} --insecure-skip-tls-verify=true
-
       - name: Deploy App
-        shell: cmd
+        # Even if the runner defaults to PowerShell, explicitly setting it helps
+        shell: powershell
         run: |
-          :: Set the variable
-          SET "FULL_TAG=***/***/demo-app:latest"
+          # 1. Set the variable (PowerShell uses $ syntax)
+          $FULL_TAG = "${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest"
 
-          :: Replace IMAGE_PLACEHOLDER with the tag using PowerShell (standard on Windows Runners)
-          :: If PowerShell isn't available, we use a basic search/replace trick
-          powershell -Command "(Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', '%FULL_TAG%') | Set-Content deployment.yaml"
+          # 2. Perform the replacement
+           (Get-Content deployment.yaml).Replace('IMAGE_PLACEHOLDER', $FULL_TAG) | Set-Content deployment.yaml
 
-          :: Apply OpenShift configurations
+          # 3. Run the OC commands
           oc apply -f deployment.yaml
           oc apply -f service.yaml
           oc apply -f route.yaml
+      
