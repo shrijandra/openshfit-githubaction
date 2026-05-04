@@ -40,9 +40,20 @@ jobs:
           docker push ${{ secrets.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:latest
 
       - name: Setup OpenShift Environment
-        run: |
-          @FOR /f "tokens=*" %%i IN ('crc oc-env') DO @call %%i
         shell: cmd
+        run: |
+          FOR /f "tokens=*" %%i IN ('crc oc-env') DO (
+            SET "line=%%i"
+            SETLOCAL ENABLEDELAYEDEXPANSION
+            FOR /f "tokens=2,3 delims= = " %%a IN ("!line!") DO (
+              IF /I "%%a"=="PATH" (
+                echo %%~b>> %GITHUB_PATH%
+              ) ELSE (
+                echo %%a=%%~b>> %GITHUB_ENV%
+              )
+            )
+            ENDLOCAL
+          )
         
       - name: Login to OpenShift
         shell: cmd
